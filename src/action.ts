@@ -24,43 +24,32 @@ export default async function main() {
   const createAnnotatedTag = !!core.getInput('create_annotated_tag');
   const dryRun = core.getInput('dry_run');
   const customReleaseRules = core.getInput('custom_release_rules');
-  const refInput = core.getInput('ref');
-  const shaInput = core.getInput('sha');
 
   let mappedReleaseRules;
   if (customReleaseRules) {
     mappedReleaseRules = mapCustomReleaseRules(customReleaseRules);
   }
 
-  let ref = process.env.GITHUB_REF;
-  let sha = process.env.GITHUB_SHA;
-  
-  if (refInput) {
-    ref = refInput;
-  }
+  const { GITHUB_REF, GITHUB_SHA } = process.env;
 
-  if (refInput) {
-    sha = shaInput;
-  }
-
-  if (!ref) {
-    core.setFailed('Missing GITHUB_REF or ref parameter.');
+  if (!GITHUB_REF) {
+    core.setFailed('Missing GITHUB_REF.');
     return;
   }
 
-  if (!sha) {
-    core.setFailed('Missing GITHUB_SHA or sha parameter.');
+  if (!GITHUB_SHA) {
+    core.setFailed('Missing GITHUB_SHA.');
     return;
   }
 
-  const currentBranch = getBranchFromRef(ref);
+  const currentBranch = getBranchFromRef(GITHUB_REF);
   const isReleaseBranch = releaseBranches
     .split(',')
     .some((branch) => currentBranch.match(branch));
   const isPreReleaseBranch = preReleaseBranches
     .split(',')
     .some((branch) => currentBranch.match(branch));
-  const isPullRequest = isPr(ref);
+  const isPullRequest = isPr(GITHUB_REF);
   const isPrerelease = !isReleaseBranch && !isPullRequest && isPreReleaseBranch;
 
   const identifier = appendToPreReleaseTag
@@ -82,7 +71,7 @@ export default async function main() {
   let newVersion: string;
 
   if (customTag) {
-    commits = await getCommits(latestTag.commit.sha, sha);
+    commits = await getCommits(latestTag.commit.sha, GITHUB_SHA);
 
     newVersion = customTag;
   } else {
@@ -117,7 +106,7 @@ export default async function main() {
     core.setOutput('previous_version', previousVersion.version);
     core.setOutput('previous_tag', previousTag.name);
 
-    commits = await getCommits(previousTag.commit.sha, sha);
+    commits = await getCommits(previousTag.commit.sha, GITHUB_SHA);
 
     let bump = await analyzeCommits(
       { releaseRules: mappedReleaseRules },
@@ -195,5 +184,5 @@ export default async function main() {
     return;
   }
 
-  await createTag(newTag, createAnnotatedTag, sha);
+  await createTag(newTag, createAnnotatedTag, GITHUB_SHA);
 }
