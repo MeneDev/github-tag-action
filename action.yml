@@ -46,7 +46,13 @@ inputs:
     description: "Do not perform tagging, just calculate next version and changelog, then exit."
     required: false
     default: "false"
-
+  ref:
+    description: "ref to use, defaults to GITHUB_REF"
+    required: false
+  sha:
+    description: "SHA to use, defaults to GITHUB_SHA"
+    required: false
+    
 runs:
   using: "node12"
   main: "lib/main.js"
